@@ -12,7 +12,7 @@ SECRET_KEY = config('DJANGO_SECRET_KEY')
 DEBUG = config('DJANGO_DEBUG', default=True, cast=bool)
 
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS: list[str] = []
 
 
 INSTALLED_APPS = [
@@ -29,6 +29,7 @@ INSTALLED_APPS = [
 
     # MY APPS
     'core.apps.CoreConfig',
+    'users.apps.UsersConfig',
 ]
 
 
@@ -47,6 +48,9 @@ MIDDLEWARE = [
 
 
 ROOT_URLCONF = 'social_network.urls'
+
+
+AUTH_USER_MODEL = 'users.CustomUser'
 
 
 TEMPLATES = [
