@@ -13,3 +13,4 @@ __pycache__/
 .pylintrc
 .env
 mypy.ini
+tasks.py

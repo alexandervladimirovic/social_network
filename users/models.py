@@ -13,7 +13,7 @@ from django.core.files.images import get_image_dimensions
 def validate_avatar(image) -> None:
     """
     Валидатор для проверки аватара.
-    Проверяет, что формат файла допустимый и размер изображения не превышает ограничения.
+    Проверяет формат файла и размер изображения.
     """
     max_width = 800
     max_height = 800
