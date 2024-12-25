@@ -66,6 +66,7 @@ INSTALLED_APPS = [
     # INSTALL APPS
     'debug_toolbar',
     'rest_framework',
+    'drf_yasg',
 
     # MY APPS
     'users.apps.UsersConfig',

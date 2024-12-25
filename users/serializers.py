@@ -1,6 +1,7 @@
 import logging
 from typing import Any
 
+from django.db.models import Q
 from django.contrib.auth import authenticate
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
@@ -39,13 +40,13 @@ class RegisterSerializer(serializers.ModelSerializer):
             logger.error("Passwords do not match")
             raise serializers.ValidationError(_("Passwords do not match"))
 
-        if CustomUser.objects.filter(username=attrs["username"]).exists():
-            logger.error("The username is already in use")
-            raise serializers.ValidationError(_("The username is already in use"))
-
-        if CustomUser.objects.filter(email=attrs["email"]).exists():
-            logger.error("The email address is already in use")
-            raise serializers.ValidationError(_("The email address is already in use"))
+        if CustomUser.objects.filter(
+            Q(username=attrs["username"]) | Q(email=attrs["email"])
+        ).exists():
+            logger.error("User with this username or email already exists")
+            raise serializers.ValidationError(
+                _("User with this username or email already exists")
+            )
 
         return attrs
 
