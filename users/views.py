@@ -1,3 +1,4 @@
+import logging
 from typing import Any
 
 from rest_framework.views import APIView
@@ -16,6 +17,9 @@ from .serializers import (
 )
 
 
+logger = logging.getLogger(__name__)
+
+
 class RegisterView(APIView):
     """
     View для регистрации пользователей
@@ -23,6 +27,7 @@ class RegisterView(APIView):
     throttle_classes = [UserRateThrottle]  # settings
 
     def post(self, request: Request) -> Response:
+        logger.info("Reguest for register user has been received..")
 
         serializer = RegisterSerializer(data=request.data)
 
@@ -35,9 +40,10 @@ class RegisterView(APIView):
                 'refresh': str(refresh),
                 'access': str(refresh.access_token),  # type: ignore[attr-defined]
             }
-
+            logger.info("User %s successfully registation", user.username)
             return Response(data, status=status.HTTP_201_CREATED)
-
+        
+        logger.warning("Error registation: %s", serializer.errors)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -46,12 +52,15 @@ class TokenObtainPairView(APIView):
     View для получения токена
     """
     def post(self, request: Request) -> Response:
+        logger.info("Request for a token has been received")
 
         serializer = TokenObtainPairSerializer(data=request.data)
 
         if serializer.is_valid():
+            logger.info("Token obtained successfully")
             return Response(serializer.validated_data, status=status.HTTP_200_OK)
 
+        logger.warning("Fail request for token: %s", serializer.errors)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -63,4 +72,5 @@ class CustomUserProfileView(generics.RetrieveAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_object(self):
+        logger.info("Request for user profile has been received")
         return self.request.user

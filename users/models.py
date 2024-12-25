@@ -1,3 +1,4 @@
+import logging
 from typing import Any, Optional
 
 from django.db import models
@@ -8,6 +9,9 @@ from django.core.validators import EmailValidator
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError
 from django.core.files.images import get_image_dimensions
+
+
+logger = logging.getLogger(__name__)
 
 
 def validate_avatar(image) -> None:
@@ -21,18 +25,22 @@ def validate_avatar(image) -> None:
     max_image_size = 5 * 1024 * 1024
 
     if image.size > max_image_size:
+        logger.error('Avatar file size must not exceed 5MB')
         raise ValidationError(_("Avatar file size must not exceed 5MB"))
 
     try:
         width, height = get_image_dimensions(image)
 
         if width is None or height is None:
+            logger.error('Invalid file image')
             raise ValidationError(_("Invalid file image"))
 
         if width > max_width or height > max_height:
+            logger.error('Avatar dimensions must not exceed 800x800 pixels')
             raise ValidationError(_("Avatar dimensions must not exceed 800x800 pixels"))
 
     except Exception as e:
+        logger.error('Invalid image file')
         raise ValidationError(_("Invalid image file")) from e
 
 
@@ -49,6 +57,7 @@ class CustomUserManager(UserManager):
         try:
             email_validator(email)
         except ValidationError as e:
+            logger.error('Invalid email address')
             raise ValueError(_("Invalid email address")) from e
 
     def create_user(
@@ -69,9 +78,11 @@ class CustomUserManager(UserManager):
         """
 
         if email is None:
+            logger.error('The email field cannot be None')
             raise ValueError(_("The email field cannot be None"))
 
         if password is None:
+            logger.error('The password field cannot be None')
             raise ValueError(_("The password field cannot be None"))
 
         self._validate_email(email)
@@ -83,6 +94,7 @@ class CustomUserManager(UserManager):
         try:
             user.save(using=self._db)
         except IntegrityError as e:
+            logger.error("The email address '{%s}' is already in use", email)
             raise ValueError(_(f"The email address '{email}' is already in use")) from e
 
         return user
@@ -111,9 +123,11 @@ class CustomUserManager(UserManager):
         extra_fields.setdefault("is_superuser", True)
 
         if extra_fields.get("is_staff") is not True:
+            logger.error("Superuser must have is_staff=True.")
             raise ValueError(_("Superuser must have is_staff=True."))
 
         if extra_fields.get("is_superuser") is not True:
+            logger.error("Superuser must have is_superuser=True.")
             raise ValueError(_("Superuser must have is_superuser=True."))
 
         return self.create_user(username, email, password, **extra_fields)

@@ -12,5 +12,4 @@ __pycache__/
 *.db
 .pylintrc
 .env
-mypy.ini
 tasks.py
