@@ -7,15 +7,40 @@ from django.utils.translation import gettext_lazy as _
 from django.core.validators import EmailValidator
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError
+from django.core.files.images import get_image_dimensions
 
-# Validators for avatar
-# Нужны ли аннотации для django modeles? mypy говорит, что они нужны, но gpt говорит что нет
+
+def validate_avatar(image) -> None:
+    """
+    Валидатор для проверки аватара.
+    Проверяет, что формат файла допустимый и размер изображения не превышает ограничения.
+    """
+    max_width = 800
+    max_height = 800
+
+    max_image_size = 5 * 1024 * 1024
+
+    if image.size > max_image_size:
+        raise ValidationError(_("Avatar file size must not exceed 5MB"))
+
+    try:
+        width, height = get_image_dimensions(image)
+
+        if width is None or height is None:
+            raise ValidationError(_("Invalid file image"))
+
+        if width > max_width or height > max_height:
+            raise ValidationError(_("Avatar dimensions must not exceed 800x800 pixels"))
+
+    except Exception as e:
+        raise ValidationError(_("Invalid image file")) from e
 
 
 class CustomUserManager(UserManager):
     """
     Менеджер для модели CustomUser.
     """
+
     @staticmethod
     def _validate_email(email: str) -> None:
 
@@ -26,7 +51,13 @@ class CustomUserManager(UserManager):
         except ValidationError as e:
             raise ValueError(_("Invalid email address")) from e
 
-    def create_user(self, username: str, email: Optional[str] = None, password: Optional[str] = None, **extra_fields: Any) -> 'CustomUser':
+    def create_user(
+        self,
+        username: str,
+        email: Optional[str] = None,
+        password: Optional[str] = None,
+        **extra_fields: Any,
+    ) -> "CustomUser":
         """
         Создает и сохраняет нового пользователя с заданными параметрами.
 
@@ -56,7 +87,13 @@ class CustomUserManager(UserManager):
 
         return user
 
-    def create_superuser(self, username: str, email: Optional[str] = None, password: Optional[str] = None, **extra_fields: Any) -> 'CustomUser':
+    def create_superuser(
+        self,
+        username: str,
+        email: Optional[str] = None,
+        password: Optional[str] = None,
+        **extra_fields: Any,
+    ) -> "CustomUser":
         """
         Создает и возвращает суперпользователя с заданными параметрами.
 
@@ -70,14 +107,14 @@ class CustomUserManager(UserManager):
         Этот метод вызывает метод create_user, но устанавливает параметры 'is_staff' и 'is_superuser' в True.
         """
 
-        extra_fields.setdefault('is_staff', True)
-        extra_fields.setdefault('is_superuser', True)
+        extra_fields.setdefault("is_staff", True)
+        extra_fields.setdefault("is_superuser", True)
 
-        if extra_fields.get('is_staff') is not True:
-            raise ValueError(_('Superuser must have is_staff=True.'))
+        if extra_fields.get("is_staff") is not True:
+            raise ValueError(_("Superuser must have is_staff=True."))
 
-        if extra_fields.get('is_superuser') is not True:
-            raise ValueError(_('Superuser must have is_superuser=True.'))
+        if extra_fields.get("is_superuser") is not True:
+            raise ValueError(_("Superuser must have is_superuser=True."))
 
         return self.create_user(username, email, password, **extra_fields)
 
@@ -85,15 +122,21 @@ class CustomUserManager(UserManager):
 class CustomUser(AbstractUser):
     """
     Модель пользователя с дополнительными полями: аватар и биография.
-    
+
     Атрибуты:
     avatar: Поле для изображения аватара пользователя.
     bio: Поле для биографии пользователя.
     """
 
-    avatar: Optional[models.ImageField] = models.ImageField(_('Avatar'), upload_to='avatars/', null=True, blank=True)
-    bio: Optional[models.TextField] = models.TextField(_('Biography'), null=True, blank=True)
-    email: models.EmailField = models.EmailField(_('Email address'), unique=True, blank=False, null=False)
+    avatar = models.ImageField(
+        _("Avatars"),
+        upload_to="avatars/",
+        null=True,
+        blank=True,
+        validators=[validate_avatar],
+    )
+    bio = models.TextField(_("Biography"), null=True, blank=True)  # type: ignore[var-annotated]
+    email = models.EmailField(_("Email address"), unique=True, blank=False, null=False)
 
     objects = CustomUserManager()
 
